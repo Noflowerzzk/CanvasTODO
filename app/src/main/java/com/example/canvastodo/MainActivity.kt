@@ -32,15 +32,26 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.foundation.gestures.*
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
 
@@ -54,7 +65,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.primary
                 ) {
 //                    Greeting("Android")
-                    Clock()  // 确保可以调用Clock()
+//                    Clock(()  // 确保可以调用Clock()
 //                    Text_0()
                 }
 
@@ -103,46 +114,104 @@ fun Clock() {
         }
     }
 
+    val surfaceSize = remember { mutableStateOf(IntSize.Zero) }
+
+    var dragOffset by remember { mutableStateOf(0f) }  // 记录滑动偏移量
+    var scale by remember { mutableStateOf(1f) }  // 控制缩放
+    var timePosition by remember { mutableStateOf(0f) }  // 控制垂直偏移
+
+    // 动态计算缩放值
+    val animatedScale by animateFloatAsState(targetValue = scale, label = "")
+    // 动态计算垂直偏移
+    val animatedPosition by animateFloatAsState(targetValue = timePosition, label = "")
+
+    // 用于跟踪滑动速度
+    var velocityTracker = remember { VelocityTracker() }
+    var isDragging by remember { mutableStateOf(false) }
+    var velocity = remember { 0f }
+
     Surface(
         color = MaterialTheme.colorScheme.primary.copy(alpha = .08f),
         modifier = Modifier
             .fillMaxSize()
             .fillMaxHeight()
-            .wrapContentSize(Alignment.TopCenter)
+//            .onGloballyPositioned { layoutCoordinates ->
+//                surfaceSize.value = layoutCoordinates.size
+//            }   // 用于获取尺寸
+//            .wrapContentSize(Alignment.TopCenter)
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+//                    onDragStart = {
+//                        isDragging = true // 开始拖动
+//                    },
+//                    onDragEnd = {
+//                        // 结束拖动，应用惯性
+//                        isDragging = false
+//                        // 根据滑动的速度应用惯性
+//                        velocity = velocityTracker.calculateVelocity().y
+//                        // 施加惯性，基于速度进行额外滑动
+//                        LaunchedEffect(velocity) {
+//                            var currentVelocity = velocity
+//                            while (abs(currentVelocity) > 0.5f) {
+//                                dragOffset = (dragOffset + currentVelocity / 10).coerceIn(-1000f, 0f)
+//                                currentVelocity *= 0.9f // 逐渐衰减速度，实现惯性减速
+//                                scale = (scale + currentVelocity / 1000).coerceIn(0.5f, 1f)
+//                                timePosition = dragOffset.coerceAtMost(0f)
+//                                delay(16) // 模拟 60fps
+//                            }
+//                        }
+//                    },
+//                    onDragCancel = {
+//                        isDragging = false
+//                    }
+                ) { change, dragAmount  ->
+                    change.consume()    // 消耗滑动事件
+                    dragOffset = (dragOffset + dragAmount).coerceIn(-1220f, 0f)
+                    // 根据滑动量控制缩放和垂直移动
+                    scale = (scale + dragAmount / 2100f).coerceIn(0.41f, 1f)
+                    timePosition = dragOffset.coerceAtMost(0f)
+                }
+            }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth() // 填充整个可用空间
                 .wrapContentHeight()
-                .padding(30.dp) // 添加一些边距
+//                .padding(30.dp) // 添加一些边距
+                .padding(start = 50.dp)
                 .padding(top = 30.dp, bottom = 30.dp)
 //                .wrapContentSize(Alignment.TopCenter)
         ) {
 //            小时分钟
             Text(
                 text = currentTime.value,
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier
+                    .padding(top = 20.dp, start = 20.dp)
+                    .offset(y = animatedPosition.dp / 4f, x = animatedPosition.dp / 24f),
                 textAlign = TextAlign.Left,
                 style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 100.sp,
-                    lineHeight = 110.sp,
+                    fontSize = 100.sp * animatedScale,  // 动态控制字体大小
+                    lineHeight = 110.sp * animatedScale,
                     color = MaterialTheme.colorScheme.primary, // 使用主题的主色
                     fontFamily = FontFamily(Font(R.font.harmonyos_sans_black))
                 )
             )
+
 
 //            年月
             Text(
                 text = currentDate.value,
                 modifier = Modifier
                     .padding(20.dp)
-                    .padding(start = 135.dp, bottom = 20.dp)
-                    .align(Alignment.BottomStart),
+                    .padding(start = 135.dp, bottom = 2.dp)
+                    .align(Alignment.BottomStart)
+                    .offset(y = (animatedPosition.dp / 3.95f), x = animatedPosition.dp / 10f),
                 textAlign = TextAlign.Left,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontSize = 27.sp,
+                    lineHeight = 30.sp,
                     color = MaterialTheme.colorScheme.primary,
-                    fontFamily = FontFamily((Font(R.font.harmonyos_sans_bold)))
+                    fontFamily = FontFamily((Font(R.font.harmonyos_sans_black)))
                 )
             )
         }
@@ -198,18 +267,41 @@ fun MainScreen() {
 
 @Composable
 fun HomeScreen() {
-// 使用 Box 让 Clock 和文本居中显示
+
+    // 创建状态来跟踪缩放比例
+    var scale by remember { mutableStateOf(1f) }
+
+    // 使用滑动手势来更新缩放比例
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .wrapContentSize(Alignment.TopCenter) // 内容居中
+            .wrapContentSize(Alignment.TopCenter),
+//            .pointerInput(Unit) {
+//                detectDragGestures { _, dragAmount ->
+//                    scale = (scale + dragAmount.y / 1000).coerceIn(0.5f, 1f) // 限制缩放范围
+//                }
+//            },
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Clock() // 显示时钟
+            Clock() // 传递缩放因子
         }
-    }}
+    }
+
+//// 使用 Box 让 Clock 和文本居中显示
+//    Box(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .wrapContentSize(Alignment.TopCenter) // 内容居中
+//    ) {
+//        Column(
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            Clock() // 显示时钟
+//        }
+    }
 
 @Composable
 fun DashboardScreen() {
