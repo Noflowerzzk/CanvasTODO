@@ -33,6 +33,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -48,7 +49,11 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.foundation.gestures.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
@@ -100,7 +105,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
 
 @Composable
-fun Clock() {
+fun Clock(modifier: Modifier = Modifier) {
     val currentTime = remember { mutableStateOf(getCurrentTime()) }
     val currentDate = remember { mutableStateOf(getCurrentDate()) }
 
@@ -111,8 +116,6 @@ fun Clock() {
             delay(1000) // 每秒更新一次
         }
     }
-
-    val surfaceSize = remember { mutableStateOf(IntSize.Zero) }
 
     var dragOffset by remember { mutableStateOf(0f) }  // 记录滑动偏移量
     var scale by remember { mutableStateOf(1f) }  // 控制缩放
@@ -128,47 +131,58 @@ fun Clock() {
     var isDragging by remember { mutableStateOf(false) }
     var velocity = remember { 0f }
 
+    // 使用 CoroutineScope 来处理非 Composable 上下文中的协程
+    val coroutineScope = rememberCoroutineScope()
+
     Surface(
         color = MaterialTheme.colorScheme.primary.copy(alpha = .08f),
         modifier = Modifier
+            .zIndex(0f)
             .fillMaxSize()
             .fillMaxHeight()
-//            .onGloballyPositioned { layoutCoordinates ->
-//                surfaceSize.value = layoutCoordinates.size
-//            }   // 用于获取尺寸
-//            .wrapContentSize(Alignment.TopCenter)
             .pointerInput(Unit) {
                 detectVerticalDragGestures(
-//                    onDragStart = {
-//                        isDragging = true // 开始拖动
-//                    },
-//                    onDragEnd = {
-//                        // 结束拖动，应用惯性
-//                        isDragging = false
-//                        // 根据滑动的速度应用惯性
-//                        velocity = velocityTracker.calculateVelocity().y
-//                        // 施加惯性，基于速度进行额外滑动
-//                        LaunchedEffect(velocity) {
-//                            var currentVelocity = velocity
-//                            while (abs(currentVelocity) > 0.5f) {
-//                                dragOffset = (dragOffset + currentVelocity / 10).coerceIn(-1000f, 0f)
-//                                currentVelocity *= 0.9f // 逐渐衰减速度，实现惯性减速
-//                                scale = (scale + currentVelocity / 1000).coerceIn(0.5f, 1f)
-//                                timePosition = dragOffset.coerceAtMost(0f)
-//                                delay(16) // 模拟 60fps
-//                            }
-//                        }
-//                    },
-//                    onDragCancel = {
-//                        isDragging = false
-//                    }
-                ) { change, dragAmount  ->
-                    change.consume()    // 消耗滑动事件
-                    dragOffset = (dragOffset + dragAmount).coerceIn(-1220f, 0f)
-                    // 根据滑动量控制缩放和垂直移动
-                    scale = (scale + dragAmount / 2100f).coerceIn(0.41f, 1f)
-                    timePosition = dragOffset.coerceAtMost(0f)
-                }
+                    onDragStart = {
+                        velocityTracker.resetTracking() // 重置速度跟踪
+                    },
+                    onDragEnd = {
+                        // 结束拖动，计算惯性
+                        velocity = velocityTracker.calculateVelocity().y
+
+                        // 惯性滚动
+                        coroutineScope.launch {
+                            var currentVelocity = velocity
+                            while (abs(currentVelocity) > 0.7f) {
+                                dragOffset =
+                                    (dragOffset + currentVelocity / 20).coerceIn(-1220f, 0f)
+                                scale = (scale + currentVelocity / 10000).coerceIn(0.41f, 1f)
+                                timePosition = dragOffset.coerceAtMost(0f)
+                                currentVelocity *= 0.9f  // 模拟惯性减速
+                                delay(16)  // 模拟 60fps
+                            }
+
+                            // 惯性结束后，判断是否需要吸附
+                            val snapThreshold = -610f
+                            if (dragOffset < snapThreshold) {
+                                // 吸附到顶部
+                                dragOffset = -1220f
+                                scale = 0.41f
+                            } else {
+                                // 恢复到初始位置
+                                dragOffset = 0f
+                                scale = 1f
+                            }
+                        }
+                    },
+                    onVerticalDrag = { change, dragAmount ->
+                        change.consume()  // 消耗滑动事件
+                        dragOffset = (dragOffset + dragAmount).coerceIn(-1220f, 0f)
+                        velocityTracker.addPosition(change.uptimeMillis, change.position) // 跟踪速度
+                        // 根据滑动量控制缩放和垂直移动
+                        scale = (scale + dragOffset / 6000f).coerceIn(0.41f, 1f)
+                        timePosition = dragOffset.coerceAtMost(0f)
+                    }
+                )
             }
     ) {
         Box(
@@ -268,6 +282,15 @@ fun HomeScreen() {
 
     // 创建状态来跟踪缩放比例
     var scale by remember { mutableStateOf(1f) }
+    var sheetOffsetY by remember { mutableStateOf(300f) }  // 默认底部栏收起的高度（可以调整）
+    var sheetExpanded by remember { mutableStateOf(false) } // 记录底部栏的状态
+
+    // 动态计算Y轴偏移量
+    val animatedOffsetY by animateFloatAsState(
+        targetValue = sheetOffsetY,
+        label = "Sheet Animation"
+    )
+
 
     // 使用滑动手势来更新缩放比例
     Box(
@@ -279,12 +302,19 @@ fun HomeScreen() {
 //                    scale = (scale + dragAmount.y / 1000).coerceIn(0.5f, 1f) // 限制缩放范围
 //                }
 //            },
+
         contentAlignment = Alignment.TopCenter
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Clock() // 传递缩放因子
+            Box(modifier = Modifier.fillMaxSize())
+            {
+                Clock() // 传递缩放因子
+                ExpandableBottomSheet(
+                    modifier = Modifier.fillMaxSize().offset{ IntOffset(0, animatedOffsetY.toInt()) }
+                )
+            }
         }
     }
 
@@ -299,7 +329,45 @@ fun HomeScreen() {
 //        ) {
 //            Clock() // 显示时钟
 //        }
+}
+
+@Composable
+fun ExpandableBottomSheet(modifier: Modifier = Modifier) {
+
+    Box(modifier = modifier
+        .fillMaxSize()
+        .zIndex(1f)) {
+
+//        // 主内容区域
+//        Text(
+//            text = "Main Content",
+//            modifier = Modifier
+//                .align(Alignment.Center)
+//                .padding(16.dp),
+//            fontSize = 24.sp
+//        )
+
+        // 底部可展开的栏
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(top = 500.dp)
+                .height(400.dp)  // 底部栏的总高度
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            // 底部栏的内容
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text(text = "Swipe up to expand", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(text = "More content goes here...", fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+            }
+        }
     }
+}
 
 @Composable
 fun DashboardScreen() {
