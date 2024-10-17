@@ -1,6 +1,5 @@
 package com.example.canvastodo
 
-import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,30 +30,24 @@ import com.example.canvastodo.ui.theme.CanvasTODOTheme
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.foundation.gestures.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+
 
 class MainActivity : ComponentActivity() {
 
@@ -105,7 +98,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
 
 @Composable
-fun Clock(modifier: Modifier = Modifier) {
+fun ClockScreen(modifier: Modifier = Modifier) {
     val currentTime = remember { mutableStateOf(getCurrentTime()) }
     val currentDate = remember { mutableStateOf(getCurrentDate()) }
 
@@ -135,11 +128,12 @@ fun Clock(modifier: Modifier = Modifier) {
     val coroutineScope = rememberCoroutineScope()
 
     Surface(
-        color = MaterialTheme.colorScheme.primary.copy(alpha = .08f),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = .00f),
         modifier = Modifier
             .zIndex(0f)
             .fillMaxSize()
-            .fillMaxHeight()
+//            .fillMaxHeight()
+            .height(animatedPosition.dp)
             .pointerInput(Unit) {
                 detectVerticalDragGestures(
                     onDragStart = {
@@ -226,7 +220,45 @@ fun Clock(modifier: Modifier = Modifier) {
                     fontFamily = FontFamily((Font(R.font.harmonyos_sans_black)))
                 )
             )
+
         }
+
+        Column {
+            Box(
+                modifier = Modifier
+//                .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .offset(y = animatedPosition.dp / 2.4f)
+                    .fillMaxHeight(.89f)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = .08f))
+//                    .padding(top = 700.dp)
+
+            ) {
+
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+//                    .background(MaterialTheme.colorScheme.primary)
+                    .wrapContentHeight()
+                    .offset(y = animatedPosition.dp / 2.4f)
+            ) {
+                Text(
+                    text = "Swipe here",
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .align(Alignment.BottomStart),
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 27.sp,
+                        lineHeight = 30.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontFamily = FontFamily((Font(R.font.harmonyos_sans_black)))
+                    )
+                )
+            }
+        }
+        // 下方日期栏
+
     }
 }
 
@@ -310,10 +342,7 @@ fun HomeScreen() {
         ) {
             Box(modifier = Modifier.fillMaxSize())
             {
-                Clock() // 传递缩放因子
-                ExpandableBottomSheet(
-                    modifier = Modifier.fillMaxSize().offset{ IntOffset(0, animatedOffsetY.toInt()) }
-                )
+                ClockScreen() // 传递缩放因子
             }
         }
     }
@@ -331,43 +360,44 @@ fun HomeScreen() {
 //        }
 }
 
-@Composable
-fun ExpandableBottomSheet(modifier: Modifier = Modifier) {
-
-    Box(modifier = modifier
-        .fillMaxSize()
-        .zIndex(1f)) {
-
-//        // 主内容区域
-//        Text(
-//            text = "Main Content",
-//            modifier = Modifier
-//                .align(Alignment.Center)
-//                .padding(16.dp),
-//            fontSize = 24.sp
-//        )
-
-        // 底部可展开的栏
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(top = 500.dp)
-                .height(400.dp)  // 底部栏的总高度
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            // 底部栏的内容
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                Text(text = "Swipe up to expand", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(text = "More content goes here...", fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-    }
-}
+//@Composable
+//fun ExpandableBottomSheet(modifier: Modifier = Modifier) {
+//
+//    Box(modifier = modifier
+//        .fillMaxSize()
+//        .zIndex(1f)
+//    ) {
+//
+////        // 主内容区域
+////        Text(
+////            text = "Main Content",
+////            modifier = Modifier
+////                .align(Alignment.Center)
+////                .padding(16.dp),
+////            fontSize = 24.sp
+////        )
+//
+//        // 底部可展开的栏
+//        Box(
+//            modifier = modifier
+//                .fillMaxWidth()
+//                .padding(top = 500.dp)
+//                .height(400.dp)  // 底部栏的总高度
+//                .background(MaterialTheme.colorScheme.background)
+//        ) {
+//            // 底部栏的内容
+//            Column(
+//                modifier = Modifier
+//                    .fillMaxSize()
+//                    .padding(16.dp)
+//            ) {
+//                Text(text = "Swipe up to expand", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+//                Spacer(modifier = Modifier.height(20.dp))
+//                Text(text = "More content goes here...", fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+//            }
+//        }
+//    }
+//}
 
 @Composable
 fun DashboardScreen() {
