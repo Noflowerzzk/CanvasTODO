@@ -38,6 +38,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
@@ -227,34 +229,43 @@ fun ClockScreen(modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
 //                .align(Alignment.BottomCenter)
+                    .zIndex(1f)
                     .fillMaxWidth()
                     .offset(y = animatedPosition.dp / 2.4f)
                     .fillMaxHeight(.89f)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = .08f))
 //                    .padding(top = 700.dp)
 
-            ) {
-
-            }
+            ) {}
             Box(
                 modifier = Modifier
+                    .zIndex(2f)
                     .fillMaxWidth()
 //                    .background(MaterialTheme.colorScheme.primary)
                     .wrapContentHeight()
-                    .offset(y = animatedPosition.dp / 2.4f)
+                    .offset(y = animatedPosition.dp / 2.4f - 30.dp)
+//                    .clip(RoundedCornerShape(50.dp))
             ) {
-                Text(
-                    text = "Swipe here",
+                Box(
                     modifier = Modifier
-                        .padding(20.dp)
-                        .align(Alignment.BottomStart),
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = 27.sp,
-                        lineHeight = 30.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontFamily = FontFamily((Font(R.font.harmonyos_sans_black)))
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .clip(RoundedCornerShape(30.dp))
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    Text(
+                        text = "Swipe here",
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .align(Alignment.BottomStart),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 27.sp,
+                            lineHeight = 30.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontFamily = FontFamily((Font(R.font.harmonyos_sans_black)))
+                        )
                     )
-                )
+                }
             }
         }
         // 下方日期栏
@@ -342,7 +353,7 @@ fun HomeScreen() {
         ) {
             Box(modifier = Modifier.fillMaxSize())
             {
-                ClockScreen() // 传递缩放因子
+                ClockScreen()
             }
         }
     }
