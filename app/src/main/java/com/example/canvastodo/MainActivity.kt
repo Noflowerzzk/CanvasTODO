@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -38,7 +39,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -46,6 +49,8 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -183,88 +188,114 @@ fun ClockScreen(modifier: Modifier = Modifier) {
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth() // 填充整个可用空间
-                .wrapContentHeight()
-//                .padding(30.dp) // 添加一些边距
-                .padding(start = 50.dp)
-                .padding(top = 30.dp, bottom = 30.dp)
-//                .wrapContentSize(Alignment.TopCenter)
-        ) {
-//            小时分钟
-            Text(
-                text = currentTime.value,
+                .fillMaxSize()
+                .height(animatedPosition.dp)
+        )
+        {
+            Box(
                 modifier = Modifier
-                    .padding(top = 20.dp, start = 20.dp)
-                    .offset(y = animatedPosition.dp / 4f, x = animatedPosition.dp / 24f),
-                textAlign = TextAlign.Left,
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 100.sp * animatedScale,  // 动态控制字体大小
-                    lineHeight = 110.sp * animatedScale,
-                    color = MaterialTheme.colorScheme.primary, // 使用主题的主色
-                    fontFamily = FontFamily(Font(R.font.harmonyos_sans_black))
+                    .align(Alignment.Center)
+                    .fillMaxWidth() // 填充整个可用空间
+                    .wrapContentHeight()
+//                .padding(30.dp) // 添加一些边距
+                    .padding(start = 50.dp)
+                    .padding(top = 30.dp, bottom = 30.dp)
+//                .wrapContentSize(Alignment.TopCenter)
+            ) {
+//            小时分钟
+                Text(
+                    text = currentTime.value,
+                    modifier = Modifier
+                        .padding(top = 20.dp, start = 20.dp)
+                        .offset(y = animatedPosition.dp / 4f, x = animatedPosition.dp / 24f),
+                    textAlign = TextAlign.Left,
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontSize = 100.sp * animatedScale,  // 动态控制字体大小
+                        lineHeight = 110.sp * animatedScale,
+                        color = MaterialTheme.colorScheme.primary, // 使用主题的主色
+                        fontFamily = FontFamily(Font(R.font.harmonyos_sans_black))
+                    )
                 )
-            )
 
 
 //            年月
-            Text(
-                text = currentDate.value,
-                modifier = Modifier
-                    .padding(20.dp)
-                    .padding(start = 135.dp, bottom = 2.dp)
-                    .align(Alignment.BottomStart)
-                    .offset(y = (animatedPosition.dp / 3.95f), x = animatedPosition.dp / 10f),
-                textAlign = TextAlign.Left,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = 27.sp,
-                    lineHeight = 30.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontFamily = FontFamily((Font(R.font.harmonyos_sans_black)))
+                Text(
+                    text = currentDate.value,
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .padding(start = 135.dp, bottom = 2.dp)
+                        .align(Alignment.BottomStart)
+                        .offset(y = (animatedPosition.dp / 3.95f), x = animatedPosition.dp / 10f),
+                    textAlign = TextAlign.Left,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 27.sp,
+                        lineHeight = 30.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontFamily = FontFamily((Font(R.font.harmonyos_sans_black)))
+                    )
                 )
-            )
-
+            }
         }
 
-        Column {
+        val scrollState = rememberScrollState()
+        var columnInitHeight by remember { mutableStateOf(100.dp) }
+        var tempboxsize by remember { mutableStateOf(IntSize.Zero) }
+        val columnHeight = animateDpAsState(targetValue = (1000.dp + dragOffset.dp)).value
+
+        Column (
+            modifier = Modifier
+                .fillMaxSize()
+                .height(columnInitHeight)
+        ){
             Box(
                 modifier = Modifier
 //                .align(Alignment.BottomCenter)
                     .zIndex(1f)
                     .fillMaxWidth()
                     .offset(y = animatedPosition.dp / 2.4f)
-                    .fillMaxHeight(.89f)
+                    .fillMaxHeight(.94f)
+//                    .height(500.dp)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = .08f))
 //                    .padding(top = 700.dp)
 
             ) {}
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .zIndex(2f)
                     .fillMaxWidth()
 //                    .background(MaterialTheme.colorScheme.primary)
-                    .wrapContentHeight()
+//                    .wrapContentHeight()
+//                    .fillMaxHeight()
+                    .height(columnHeight)
                     .offset(y = animatedPosition.dp / 2.4f - 30.dp)
+                    .weight(1f)
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(MaterialTheme.colorScheme.background)
 //                    .clip(RoundedCornerShape(50.dp))
             ) {
-                Box(
+                val maxHeight = constraints.maxHeight.toFloat() // 获取最大高度
+
+
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .clip(RoundedCornerShape(30.dp))
-                        .background(MaterialTheme.colorScheme.background)
+                        .fillMaxSize()
+//                        .height(-animatedPosition.dp / 2.4f + columnInitHeight)
+                        .verticalScroll(scrollState) // 添加垂直滚动
+                        .padding(16.dp), // 添加内边距
+                    verticalArrangement = Arrangement.Top,
+                    horizontalAlignment = Alignment.Start
                 ) {
-                    Text(
-                        text = "Swipe here",
-                        modifier = Modifier
-                            .padding(20.dp)
-                            .align(Alignment.BottomStart),
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = 27.sp,
-                            lineHeight = 30.sp,
+                    // 添加多个项以超过屏幕高度
+                    for (i in 1..50) {
+                        Text(
+                            text = "Height: ${maxHeight} #$i",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
                             color = MaterialTheme.colorScheme.primary,
-                            fontFamily = FontFamily((Font(R.font.harmonyos_sans_black)))
+                            fontSize = 18.sp
                         )
-                    )
+                    }
                 }
             }
         }
