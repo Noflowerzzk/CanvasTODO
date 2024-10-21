@@ -2,6 +2,7 @@ package com.example.canvastodo
 
 import android.os.Build
 import android.os.Bundle
+import android.view.Surface
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateDpAsState
@@ -120,6 +121,7 @@ fun ClockScreen(modifier: Modifier = Modifier) {
     var dragOffset by remember { mutableStateOf(0f) }  // 记录滑动偏移量
     var scale by remember { mutableStateOf(1f) }  // 控制缩放
     var timePosition by remember { mutableStateOf(0f) }  // 控制垂直偏移
+    var alpha by remember { mutableStateOf(0f) }
 
     // 动态计算缩放值
     val animatedScale by animateFloatAsState(targetValue = scale, label = "")
@@ -134,10 +136,18 @@ fun ClockScreen(modifier: Modifier = Modifier) {
     // 使用 CoroutineScope 来处理非 Composable 上下文中的协程
     val coroutineScope = rememberCoroutineScope()
 
+    val scrollState = rememberScrollState()
+    var columnInitHeight by remember { mutableStateOf(100.dp) }
+    var tempboxsize by remember { mutableStateOf(IntSize.Zero) }
+    val columnHeight by animateDpAsState(targetValue = (1000.dp - dragOffset.dp))
+
+    val animatedAlpha by animateFloatAsState(targetValue = alpha, label = "")
+
+
     Surface(
         color = MaterialTheme.colorScheme.primary.copy(alpha = .00f),
         modifier = Modifier
-            .zIndex(0f)
+            .zIndex(2f)
             .fillMaxSize()
 //            .fillMaxHeight()
             .height(animatedPosition.dp)
@@ -145,6 +155,8 @@ fun ClockScreen(modifier: Modifier = Modifier) {
                 detectVerticalDragGestures(
                     onDragStart = {
                         velocityTracker.resetTracking() // 重置速度跟踪
+                        alpha = (if(scale  > 0.75) 0f else (1 - scale) / 0.59f).coerceIn(0f, 1f)
+
                     },
                     onDragEnd = {
                         // 结束拖动，计算惯性
@@ -174,6 +186,9 @@ fun ClockScreen(modifier: Modifier = Modifier) {
                                 scale = 1f
                             }
                         }
+
+//                        alpha = (if(scale  > 0.75) 0f else (1 - scale) / 0.59f).coerceIn(0f, 1f)
+                        alpha = ((1 - scale) / 0.59f).coerceIn(0f, 1f)
                     },
                     onVerticalDrag = { change, dragAmount ->
                         change.consume()  // 消耗滑动事件
@@ -182,6 +197,8 @@ fun ClockScreen(modifier: Modifier = Modifier) {
                         // 根据滑动量控制缩放和垂直移动
                         scale = (scale + dragOffset / 6000f).coerceIn(0.41f, 1f)
                         timePosition = dragOffset.coerceAtMost(0f)
+
+//                        alpha = (if(scale  > 0.75) 0f else (1 - scale) / 0.59f).coerceIn(0f, 1f)
                     }
                 )
             }
@@ -237,71 +254,83 @@ fun ClockScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        val scrollState = rememberScrollState()
-        var columnInitHeight by remember { mutableStateOf(100.dp) }
-        var tempboxsize by remember { mutableStateOf(IntSize.Zero) }
-        val columnHeight = animateDpAsState(targetValue = (1000.dp + dragOffset.dp)).value
+        // 动画透明度
+//
+
 
         Column (
             modifier = Modifier
-                .fillMaxSize()
+//                .fillMaxSize()
+//                .weight(1f)
+                .zIndex(1f)
                 .height(columnInitHeight)
+                .offset(y = animatedPosition.dp / 2.4f)
         ){
             Box(
                 modifier = Modifier
 //                .align(Alignment.BottomCenter)
-                    .zIndex(1f)
                     .fillMaxWidth()
-                    .offset(y = animatedPosition.dp / 2.4f)
                     .fillMaxHeight(.94f)
 //                    .height(500.dp)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = .08f))
 //                    .padding(top = 700.dp)
 
             ) {}
-            BoxWithConstraints(
-                modifier = Modifier
-                    .zIndex(2f)
-                    .fillMaxWidth()
-//                    .background(MaterialTheme.colorScheme.primary)
-//                    .wrapContentHeight()
+//            BoxWithConstraints(
+//                modifier = Modifier
+//                    .zIndex(2f)
+//                    .weight(1f)
+//                    .fillMaxWidth()
+////                    .background(MaterialTheme.colorScheme.primary)
+////                    .wrapContentHeight()
 //                    .fillMaxHeight()
-                    .height(columnHeight)
-                    .offset(y = animatedPosition.dp / 2.4f - 30.dp)
-                    .weight(1f)
-                    .clip(RoundedCornerShape(30.dp))
-                    .background(MaterialTheme.colorScheme.background)
-//                    .clip(RoundedCornerShape(50.dp))
-            ) {
-                val maxHeight = constraints.maxHeight.toFloat() // 获取最大高度
+////                    .height(columnHeight)
+//                    .clip(RoundedCornerShape(30.dp))
+//                    .background(MaterialTheme.colorScheme.background)
+//                    .offset(y = -30.dp)
+////                    .padding(-30.dp)
+//            ) {
+//                val maxHeight = constraints.maxHeight.toFloat() // 获取最大高度
 
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-//                        .height(-animatedPosition.dp / 2.4f + columnInitHeight)
-                        .verticalScroll(scrollState) // 添加垂直滚动
-                        .padding(16.dp), // 添加内边距
-                    verticalArrangement = Arrangement.Top,
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    // 添加多个项以超过屏幕高度
-                    for (i in 1..50) {
-                        Text(
-                            text = "Height: ${maxHeight} #$i",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 18.sp
-                        )
-                    }
-                }
-            }
         }
+
+
+
         // 下方日期栏
 
     }
+
+
+
+    Column(
+        modifier = Modifier
+            .zIndex(0f)
+            .fillMaxSize()
+//                        .height(-animatedPosition.dp / 2.4f + columnInitHeight)
+            .verticalScroll(scrollState) // 添加垂直滚动
+            .padding(16.dp), // 添加内边距
+//                    .clip(RoundedCornerShape(30.dp))
+//                    .background(MaterialTheme.colorScheme.background)
+//                    .offset(y = (-70).dp)
+//                    .height(columnHeight),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.Start
+    ) {
+        // 添加多个项以超过屏幕高度
+        for (i in 1..50) {
+            Text(
+                text = "Alpha: ${animatedAlpha} #$i",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+//                            .background(MaterialTheme.colorScheme.primary),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = animatedAlpha),
+                fontSize = 18.sp
+            )
+        }
+    }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
