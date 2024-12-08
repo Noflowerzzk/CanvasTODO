@@ -188,7 +188,6 @@ fun ClockScreen(modifier: Modifier = Modifier) {
                         }
 
 //                        alpha = (if(scale  > 0.75) 0f else (1 - scale) / 0.59f).coerceIn(0f, 1f)
-                        alpha = ((1 - scale) / 0.59f).coerceIn(0f, 1f)
                     },
                     onVerticalDrag = { change, dragAmount ->
                         change.consume()  // 消耗滑动事件
@@ -197,7 +196,7 @@ fun ClockScreen(modifier: Modifier = Modifier) {
                         // 根据滑动量控制缩放和垂直移动
                         scale = (scale + dragOffset / 6000f).coerceIn(0.41f, 1f)
                         timePosition = dragOffset.coerceAtMost(0f)
-
+                        alpha = ((1 - scale) / 0.59f).coerceIn(0f, 1f)
 //                        alpha = (if(scale  > 0.75) 0f else (1 - scale) / 0.59f).coerceIn(0f, 1f)
                     }
                 )
@@ -318,7 +317,7 @@ fun ClockScreen(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.Start
     ) {
         // 添加多个项以超过屏幕高度
-        for (i in 1..50) {
+        for (i in 1..5) {
             Text(
                 text = "Alpha: ${animatedAlpha} #$i",
                 modifier = Modifier
